@@ -1,0 +1,7 @@
+# Windows环境变量管理工具依赖包
+# 基于PySide6的图形界面应用
+
+# 核心GUI框架
+PySide6>=6.0.0
+
+# 可选的开发和测试依赖请安装 requirements-dev.txt 
