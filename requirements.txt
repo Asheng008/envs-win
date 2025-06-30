@@ -4,4 +4,7 @@
 # 核心GUI框架
 PySide6>=6.0.0
 
+# YAML配置文件处理（用于批量导入导出）
+PyYAML>=6.0.0
+
 # 可选的开发和测试依赖请安装 requirements-dev.txt 

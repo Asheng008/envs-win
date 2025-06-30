@@ -25,7 +25,7 @@
   - 实时搜索和过滤功能
 
 - **批量操作**
-  - 支持JSON、CSV、REG格式的批量导入导出
+  - 支持YAML格式的批量导入导出（默认推荐），同时兼容JSON、CSV、REG格式
   - 批量删除选中的环境变量
   - 从剪贴板快速添加变量
 
@@ -54,6 +54,7 @@
 ### 依赖库
 ```
 PySide6 >= 6.0.0
+PyYAML >= 6.0.0
 ```
 
 ## 📦 安装指南
@@ -281,6 +282,7 @@ A: 插件功能计划在第二阶段开发，预计独立应用完成后的4周�
 ## 🙏 致谢
 
 - [PySide6](https://pypi.org/project/PySide6/) - 优秀的Python GUI框架
+- [PyYAML](https://pypi.org/project/PyYAML/) - 强大的YAML解析和生成库
 - [Qt](https://www.qt.io/) - 强大的跨平台应用程序框架
 - 所有贡献者和使用者
 
