@@ -9,4 +9,7 @@ PyYAML>=6.0.0
 # 系统和进程信息（用于单例检查）
 psutil>=5.9.0
 
+# 打包工具
+pyinstaller
+
 # 可选的开发和测试依赖请安装 requirements-dev.txt
