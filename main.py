@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """
 Windows环境变量管理工具 - 主入口文件
 
