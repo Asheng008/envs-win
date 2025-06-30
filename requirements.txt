@@ -1,5 +1,4 @@
-# Windows环境变量管理工具依赖包
-# 基于PySide6的图形界面应用
+# Windows环境变量管理工具依赖
 
 # 核心GUI框架
 PySide6>=6.0.0
@@ -7,4 +6,7 @@ PySide6>=6.0.0
 # YAML配置文件处理（用于批量导入导出）
 PyYAML>=6.0.0
 
-# 可选的开发和测试依赖请安装 requirements-dev.txt 
+# 系统和进程信息（用于单例检查）
+psutil>=5.9.0
+
+# 可选的开发和测试依赖请安装 requirements-dev.txt

@@ -14,30 +14,30 @@
 ### 阶段1: 基础架构搭建 (第1-2周)
 
 #### 1.1 项目初始化
-- [ ] **环境准备**
-  - [ ] 安装Python 3.8+
-  - [ ] 创建虚拟环境
-  - [ ] 安装PySide6和PyYAML依赖
-  - [ ] 配置开发环境（IDE设置）
-  - [ ] 设置Git仓库和.gitignore
+- [x] **环境准备**
+  - [x] 安装Python 3.8+
+  - [x] 创建虚拟环境
+  - [x] 安装PySide6和PyYAML依赖
+  - [x] 配置开发环境（IDE设置）
+  - [x] 设置Git仓库和.gitignore
 
-- [ ] **项目结构创建**
-  - [ ] 创建根目录 `env_manager/`
-  - [ ] 创建核心模块目录 `core/`
-  - [ ] 创建UI模块目录 `ui/` 及子目录
-  - [ ] 创建数据模型目录 `models/`
-  - [ ] 创建工具模块目录 `utils/`
-  - [ ] 创建资源目录 `resources/`
-  - [ ] 创建测试目录 `tests/`
-  - [ ] 创建文档目录 `docs/`
-  - [ ] 创建主入口文件 `main.py`
+- [x] **项目结构创建**
+  - [x] 创建根目录 `env_manager/`
+  - [x] 创建核心模块目录 `core/`
+  - [x] 创建UI模块目录 `ui/` 及子目录
+  - [x] 创建数据模型目录 `models/`
+  - [x] 创建工具模块目录 `utils/`
+  - [x] 创建资源目录 `resources/`
+  - [x] 创建测试目录 `tests/`
+  - [x] 创建文档目录 `docs/`
+  - [x] 创建主入口文件 `main.py`
 
-- [ ] **基础配置文件**
-  - [ ] 创建 `requirements.txt`
-  - [ ] 创建 `requirements-dev.txt`
+- [x] **基础配置文件**
+  - [x] 创建 `requirements.txt`
+  - [x] 创建 `requirements-dev.txt`
   - [ ] 创建 `setup.py` 或 `pyproject.toml`
-  - [ ] 创建 `build.py` 构建脚本
-  - [ ] 创建基本的 `.gitignore`
+  - [x] 创建 `build.py` 构建脚本
+  - [x] 创建基本的 `.gitignore`
 
 #### 1.2 核心基础模块开发
 
@@ -51,71 +51,71 @@
   - [ ] 添加操作异常处理
   - [ ] 编写单元测试
 
-- [ ] **自定义异常** (`core/exceptions.py`)
-  - [ ] 定义 `RegistryAccessError`
-  - [ ] 定义 `PermissionError`
-  - [ ] 定义 `ValidationError`
-  - [ ] 定义 `BackupError`
-  - [ ] 定义其他业务异常
+- [x] **自定义异常** (`core/exceptions.py`)
+  - [x] 定义 `RegistryAccessError`
+  - [x] 定义 `PermissionError`
+  - [x] 定义 `ValidationError`
+  - [x] 定义 `BackupError`
+  - [x] 定义其他业务异常
 
-- [ ] **配置管理** (`utils/config.py`)
-  - [ ] 设计配置文件结构
-  - [ ] 实现QSettings配置读写
-  - [ ] 定义默认配置项
-  - [ ] 实现配置验证
-  - [ ] 添加配置迁移机制
+- [x] **配置管理** (`utils/config.py`)
+  - [x] 设计配置文件结构
+  - [x] 实现QSettings配置读写
+  - [x] 定义默认配置项
+  - [x] 实现配置验证
+  - [x] 添加配置迁移机制
 
-- [ ] **日志系统** (`utils/logger.py`)
-  - [ ] 配置Python logging
-  - [ ] 定义日志级别和格式
-  - [ ] 实现日志文件轮转
-  - [ ] 添加操作审计日志
-  - [ ] 集成异常日志记录
+- [x] **日志系统** (`utils/logger.py`)
+  - [x] 配置Python logging
+  - [x] 定义日志级别和格式
+  - [x] 实现日志文件轮转
+  - [x] 添加操作审计日志
+  - [x] 集成异常日志记录
 
-- [ ] **常量定义** (`utils/constants.py`)
-  - [ ] 定义注册表路径常量
-  - [ ] 定义UI相关常量
-  - [ ] 定义文件格式常量
-  - [ ] 定义错误消息常量
+- [x] **常量定义** (`utils/constants.py`)
+  - [x] 定义注册表路径常量
+  - [x] 定义UI相关常量
+  - [x] 定义文件格式常量
+  - [x] 定义错误消息常量
 
 #### 1.3 基础UI框架
 
-- [ ] **主窗口框架** (`ui/main_window.py`)
-  - [ ] 创建QMainWindow基类
+- [x] **主窗口框架** (`ui/main_window.py`)
+  - [x] 创建QMainWindow基类
   - [ ] 设计主窗口布局
   - [ ] 添加菜单栏结构
   - [ ] 添加工具栏结构
   - [ ] 添加状态栏
   - [ ] 实现基础的窗口事件处理
 
-- [ ] **应用程序入口** (`main.py`)
-  - [ ] 创建QApplication
-  - [ ] 实现启动参数处理
+- [x] **应用程序入口** (`main.py`)
+  - [x] 创建QApplication
+  - [x] 实现启动参数处理
   - [ ] 添加启动画面(可选)
-  - [ ] 实现单实例检查
-  - [ ] 添加异常捕获机制
+  - [x] 实现单实例检查
+  - [x] 添加异常捕获机制
 
 ### 阶段2: 核心功能开发 (第3-5周)
 
 #### 2.1 数据模型设计
 
-- [ ] **环境变量模型** (`models/env_model.py`)
-  - [ ] 设计 `EnvironmentVariable` 类
-  - [ ] 实现变量验证逻辑
-  - [ ] 添加变量类型枚举（系统/用户）
-  - [ ] 实现变量比较和排序
-  - [ ] 添加变量状态管理（新增/修改/删除）
+- [x] **环境变量模型** (`models/env_model.py`)
+  - [x] 设计 `EnvironmentVariable` 类
+  - [x] 实现变量验证逻辑
+  - [x] 添加变量类型枚举（系统/用户）
+  - [x] 实现变量比较和排序
+  - [x] 添加变量状态管理（新增/修改/删除）
 
-- [ ] **备份模型** (`models/backup_model.py`)
-  - [ ] 设计 `BackupInfo` 类
-  - [ ] 实现备份元数据管理
-  - [ ] 定义备份文件格式（YAML）
-  - [ ] 添加备份完整性验证
+- [x] **备份模型** (`models/backup_model.py`)
+  - [x] 设计 `BackupInfo` 类
+  - [x] 实现备份元数据管理
+  - [x] 定义备份文件格式（YAML）
+  - [x] 添加备份完整性验证
 
 #### 2.2 核心控制器
 
-- [ ] **环境变量控制器** (`core/env_controller.py`)
-  - [ ] 实现 `EnvController` 类
+- [x] **环境变量控制器** (`core/env_controller.py`)
+  - [x] 实现 `EnvController` 类
   - [ ] 实现获取系统变量方法
   - [ ] 实现获取用户变量方法
   - [ ] 实现设置变量方法
@@ -124,12 +124,12 @@
   - [ ] 添加变量变更通知机制
   - [ ] 实现操作历史记录
 
-- [ ] **数据验证器** (`core/validator.py`)
-  - [ ] 实现变量名验证
-  - [ ] 实现变量值验证
-  - [ ] 实现路径有效性检查
-  - [ ] 实现特殊字符检查
-  - [ ] 实现长度限制检查
+- [x] **数据验证器** (`core/validator.py`)
+  - [x] 实现变量名验证
+  - [x] 实现变量值验证
+  - [x] 实现路径有效性检查
+  - [x] 实现特殊字符检查
+  - [x] 实现长度限制检查
 
 #### 2.3 主要UI组件
 
@@ -161,8 +161,8 @@
 
 #### 3.1 PATH变量专用功能
 
-- [ ] **PATH控制器** (`core/path_controller.py`)
-  - [ ] 实现 `PathController` 类
+- [x] **PATH控制器** (`core/path_controller.py`)
+  - [x] 实现 `PathController` 类
   - [ ] 实现PATH值解析方法
   - [ ] 实现路径有效性验证
   - [ ] 实现重复路径检测
@@ -211,8 +211,8 @@
 
 #### 3.3 备份恢复系统
 
-- [ ] **备份控制器** (`core/backup_controller.py`)
-  - [ ] 实现 `BackupController` 类
+- [x] **备份控制器** (`core/backup_controller.py`)
+  - [x] 实现 `BackupController` 类
   - [ ] 实现自动备份功能
   - [ ] 实现手动备份功能
   - [ ] 实现备份恢复功能
