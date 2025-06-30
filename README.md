@@ -290,7 +290,7 @@ A: 插件功能计划在第二阶段开发，预计独立应用完成后的4周�
 
 - 项目主页: https://github.com/Asheng008/envs-win
 - 问题报告: https://github.com/Asheng008/envs-win/issues
-- 邮箱: your-email@example.com
+- 邮箱: w62745@qq.com
 
 ---
 
