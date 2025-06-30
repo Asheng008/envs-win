@@ -61,7 +61,7 @@ PySide6 >= 6.0.0
 ### 方式一：直接运行（推荐）
 
 1. **下载预编译版本**
-   - 从 [Releases](https://github.com/your-username/envs-win/releases) 页面下载最新版本
+   - 从 [Releases](https://github.com/Asheng008/envs-win/releases) 页面下载最新版本
    - 解压到任意目录
    - 以管理员权限运行 `EnvManager.exe`
 
@@ -69,7 +69,7 @@ PySide6 >= 6.0.0
 
 1. **克隆仓库**
    ```cmd
-   git clone https://github.com/your-username/envs-win.git
+   git clone https://github.com/Asheng008/envs-win.git
    cd envs-win
    ```
 
@@ -172,7 +172,7 @@ env_manager/
 
 ```cmd
 # 克隆项目
-git clone https://github.com/your-username/envs-win.git
+git clone https://github.com/Asheng008/envs-win.git
 cd envs-win
 
 # 创建虚拟环境
@@ -286,8 +286,8 @@ A: 插件功能计划在第二阶段开发，预计独立应用完成后的4周�
 
 ## 📞 联系方式
 
-- 项目主页: https://github.com/your-username/envs-win
-- 问题报告: https://github.com/your-username/envs-win/issues
+- 项目主页: https://github.com/Asheng008/envs-win
+- 问题报告: https://github.com/Asheng008/envs-win/issues
 - 邮箱: your-email@example.com
 
 ---
