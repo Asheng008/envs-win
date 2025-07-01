@@ -227,7 +227,11 @@ def main():
             
             # 应用窗口配置
             window_config = config_manager.get_window_config()
-            main_window.resize(window_config['width'], window_config['height'])
+            
+            # 确保转换为整数类型
+            width = int(window_config['width'])
+            height = int(window_config['height'])
+            main_window.resize(width, height)
             
             if window_config['maximized']:
                 main_window.showMaximized()
@@ -236,8 +240,10 @@ def main():
                 
                 # 设置窗口位置
                 if window_config['position']:
-                    x, y = window_config['position']
-                    main_window.move(x, y)
+                    pos = window_config['position']
+                    if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+                        x, y = int(pos[0]), int(pos[1])
+                        main_window.move(x, y)
             
             logger.info("应用程序界面初始化完成")
             

@@ -32,8 +32,8 @@ class ConfigManager:
         """设置默认配置值"""
         defaults = {
             # 窗口设置
-            'window/width': 1000,
-            'window/height': 700,
+            'window/width': 800,
+            'window/height': 600,
             'window/maximized': False,
             'window/position': None,
             
@@ -133,7 +133,7 @@ class ConfigManager:
         except Exception:
             return False
     
-    def backup_config(self, backup_path: str = None) -> Optional[str]:
+    def backup_config(self, backup_path: Optional[str] = None) -> Optional[str]:
         """备份当前配置"""
         try:
             if backup_path is None:
@@ -151,14 +151,14 @@ class ConfigManager:
     def get_window_config(self) -> Dict[str, Any]:
         """获取窗口相关配置"""
         return {
-            'width': self.get('window/width', 1000),
-            'height': self.get('window/height', 700),
+            'width': self.get('window/width', 800),
+            'height': self.get('window/height', 600),
             'maximized': self.get('window/maximized', False),
-            'position': self.get('window/position')
+            'position': self.get('window/position', None)
         }
     
-    def set_window_config(self, width: int = None, height: int = None, 
-                         maximized: bool = None, position: tuple = None) -> None:
+    def set_window_config(self, width: Optional[int] = None, height: Optional[int] = None, 
+                         maximized: Optional[bool] = None, position: Optional[tuple] = None) -> None:
         """设置窗口相关配置"""
         if width is not None:
             self.set('window/width', width)
