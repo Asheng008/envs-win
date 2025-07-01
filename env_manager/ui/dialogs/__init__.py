@@ -5,15 +5,19 @@
 """
 
 from .edit_dialog import EditDialog
-from .import_dialog import ImportDialog
-from .backup_dialog import BackupDialog
-from .settings_dialog import SettingsDialog
-from .path_editor_dialog import PathEditorDialog
+from .path_editor_dialog import PathEditorDialog, PathListWidget, PathValidationWorker
+
+# TODO: 其他对话框待实现
+# from .import_dialog import ImportDialog
+# from .backup_dialog import BackupDialog
+# from .settings_dialog import SettingsDialog
 
 __all__ = [
     'EditDialog',
-    'ImportDialog', 
-    'BackupDialog',
-    'SettingsDialog',
-    'PathEditorDialog'
+    'PathEditorDialog',
+    'PathListWidget',
+    'PathValidationWorker',
+    # 'ImportDialog', 
+    # 'BackupDialog',
+    # 'SettingsDialog'
 ] 
