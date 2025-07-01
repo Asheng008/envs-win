@@ -6,10 +6,8 @@ UI组件模块
 
 from .env_table import EnvTable
 from .search_widget import SearchWidget
-from .path_editor import PathEditor
 
 __all__ = [
     'EnvTable',
-    'SearchWidget',
-    'PathEditor'
+    'SearchWidget'
 ] 
