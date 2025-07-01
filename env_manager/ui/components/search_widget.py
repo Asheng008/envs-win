@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox, 
     QLabel, QPushButton, QCheckBox, QCompleter, QGroupBox,
     QButtonGroup, QRadioButton, QFrame, QToolButton, QMenu,
-    QWidgetAction, QSpinBox, QSlider
+    QWidgetAction, QSpinBox, QSlider, QDialog
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QStringListModel, QSettings
 from PySide6.QtGui import QAction, QIcon, QFont
@@ -64,7 +64,7 @@ class SearchHistoryManager:
         self.settings.setValue("search/history", self.history)
 
 
-class AdvancedSearchDialog(QWidget):
+class AdvancedSearchDialog(QDialog):
     """高级搜索对话框"""
     
     search_requested = Signal(dict)  # 搜索请求信号
@@ -72,7 +72,7 @@ class AdvancedSearchDialog(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("高级搜索")
-        self.setWindowModality(Qt.WindowModality.WindowModal)
+        self.setModal(True)  # 设置为模态对话框
         self.setFixedSize(400, 300)
         self._setup_ui()
         
@@ -158,6 +158,7 @@ class SearchWidget(QWidget):
     search_changed = Signal(str, dict)  # 搜索文本和选项变化
     filter_changed = Signal(dict)  # 过滤条件变化
     search_cleared = Signal()  # 搜索清除
+    textChanged = Signal(str)  # 搜索文本实时变化（便捷信号）
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -239,8 +240,8 @@ class SearchWidget(QWidget):
         
         layout.addLayout(stats_layout)
         
-        # 高级搜索对话框
-        self.advanced_dialog = AdvancedSearchDialog(self)
+        # 高级搜索对话框将在需要时创建（懒加载）
+        self.advanced_dialog = None
         
     def _setup_options_menu(self):
         """设置选项菜单"""
@@ -296,9 +297,8 @@ class SearchWidget(QWidget):
         self.search_input.textChanged.connect(self._on_search_text_changed)
         self.search_input.returnPressed.connect(self._on_search_submit)
         
-        # 高级搜索
+        # 高级搜索按钮
         self.advanced_button.clicked.connect(self._show_advanced_search)
-        self.advanced_dialog.search_requested.connect(self._on_advanced_search)
         
         # 快速过滤
         self.quick_filter_group.buttonClicked.connect(self._on_quick_filter_changed)
@@ -312,6 +312,9 @@ class SearchWidget(QWidget):
         
     def _on_search_text_changed(self, text: str):
         """处理搜索文本变化"""
+        # 发射文本变化信号
+        self.textChanged.emit(text)
+        
         # 延迟搜索，避免过于频繁
         self.search_timer.stop()
         if text.strip():
@@ -368,7 +371,11 @@ class SearchWidget(QWidget):
             
     def _show_advanced_search(self):
         """显示高级搜索对话框"""
-        self.advanced_dialog.show()
+        if self.advanced_dialog is None:
+            self.advanced_dialog = AdvancedSearchDialog(self)
+            # 连接高级搜索对话框的信号
+            self.advanced_dialog.search_requested.connect(self._on_advanced_search)
+        self.advanced_dialog.exec()
         
     def _on_advanced_search(self, params: Dict[str, Any]):
         """处理高级搜索"""
@@ -378,7 +385,7 @@ class SearchWidget(QWidget):
             self.search_changed.emit(text, self._current_search_options)
         else:
             self.filter_changed.emit(params)
-            
+        
     def _update_completer(self):
         """更新自动完成"""
         model = QStringListModel(self.history_manager.get_history())
@@ -449,12 +456,21 @@ class SearchWidget(QWidget):
         
     def get_search_text(self) -> str:
         """获取搜索文本"""
-        return self.search_input.text().strip()
+        return self.search_input.text()
+    
+    def text(self) -> str:
+        """获取搜索文本（便捷方法）"""
+        return self.search_input.text()
         
     def clear_search(self):
         """清除搜索"""
         self.search_input.clear()
         self.result_label.setText("准备搜索")
+        self.search_cleared.emit()
+    
+    def clear(self):
+        """清除搜索（便捷方法）"""
+        self.clear_search()
         
     def set_result_count(self, total: int, filtered: int):
         """设置搜索结果数量"""

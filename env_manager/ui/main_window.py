@@ -9,16 +9,23 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QSplitter, 
     QMenuBar, QMenu, QToolBar, QStatusBar, QLabel,
     QLineEdit, QPushButton, QComboBox, QGroupBox,
-    QMessageBox, QApplication
+    QMessageBox, QApplication, QDialog
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QPoint, QSize
 from PySide6.QtGui import QAction, QKeySequence, QIcon
 
+# 导入自定义组件和控制器
+from .components.env_table import EnvTable
+from .components.search_widget import SearchWidget
+from .dialogs.edit_dialog import EditDialog
+from ..core.env_controller import EnvController
+from ..models.env_model import EnvironmentVariable, EnvType
 from ..utils.config import ConfigManager
 from ..utils.constants import (
     APP_NAME, APP_VERSION, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT,
     WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, SHORTCUTS
 )
+from ..utils.logger import get_logger
 
 
 class MainWindow(QMainWindow):
@@ -30,8 +37,10 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        # 配置管理器
+        # 初始化日志和控制器
+        self.logger = get_logger(__name__)
         self.config_manager = ConfigManager()
+        self.env_controller = EnvController()
         
         # 初始化UI
         self._init_ui()
@@ -45,6 +54,9 @@ class MainWindow(QMainWindow):
         
         # 设置窗口事件处理
         self._setup_event_handlers()
+        
+        # 加载环境变量数据
+        self._load_env_vars()
         
         # 初始化状态
         self._update_status("准备就绪")
@@ -64,8 +76,8 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(5, 5, 5, 5)
         
         # 创建搜索区域
-        search_group = self._create_search_area()
-        main_layout.addWidget(search_group)
+        self.search_widget = SearchWidget()
+        main_layout.addWidget(self.search_widget)
         
         # 创建主要内容区域
         content_splitter = self._create_content_area()
@@ -74,59 +86,12 @@ class MainWindow(QMainWindow):
         # 设置焦点
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
     
-    def _create_search_area(self) -> QGroupBox:
-        """创建搜索区域"""
-        search_group = QGroupBox("搜索和筛选")
-        search_layout = QHBoxLayout(search_group)
-        
-        # 搜索框
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("搜索环境变量名称或值...")
-        self.search_input.setClearButtonEnabled(True)
-        search_layout.addWidget(QLabel("搜索:"))
-        search_layout.addWidget(self.search_input)
-        
-        # 搜索类型选择
-        self.search_type = QComboBox()
-        self.search_type.addItems(["变量名", "变量值", "全部"])
-        self.search_type.setCurrentText("全部")
-        search_layout.addWidget(QLabel("类型:"))
-        search_layout.addWidget(self.search_type)
-        
-        # 环境变量类型筛选
-        self.env_type_filter = QComboBox()
-        self.env_type_filter.addItems(["全部", "系统变量", "用户变量"])
-        self.env_type_filter.setCurrentText("全部")
-        search_layout.addWidget(QLabel("范围:"))
-        search_layout.addWidget(self.env_type_filter)
-        
-        # 搜索按钮
-        self.search_button = QPushButton("搜索")
-        self.clear_search_button = QPushButton("清除")
-        search_layout.addWidget(self.search_button)
-        search_layout.addWidget(self.clear_search_button)
-        
-        search_layout.addStretch()
-        
-        return search_group
-    
     def _create_content_area(self) -> QSplitter:
         """创建主要内容区域"""
         splitter = QSplitter(Qt.Orientation.Horizontal)
         
-        # 左侧：环境变量列表
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # 环境变量表格
-        self.env_table = QTableWidget()
-        self.env_table.setColumnCount(3)
-        self.env_table.setHorizontalHeaderLabels(["变量名", "变量值", "类型"])
-        self.env_table.horizontalHeader().setStretchLastSection(True)
-        self.env_table.setAlternatingRowColors(True)
-        self.env_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        left_layout.addWidget(self.env_table)
+        # 左侧：环境变量表格（使用自定义组件）
+        self.env_table = EnvTable()
         
         # 右侧：详细信息和操作面板
         right_widget = QWidget()
@@ -171,7 +136,7 @@ class MainWindow(QMainWindow):
         right_layout.addStretch()
         
         # 将左右部件添加到分割器
-        splitter.addWidget(left_widget)
+        splitter.addWidget(self.env_table)
         splitter.addWidget(right_widget)
         splitter.setSizes([600, 300])  # 设置初始大小比例
         
@@ -423,13 +388,19 @@ class MainWindow(QMainWindow):
     
     def _setup_event_handlers(self):
         """设置事件处理器"""
-        # 表格选择变化事件
-        self.env_table.itemSelectionChanged.connect(self._on_selection_changed)
+        # 环境变量表格事件
+        self.env_table.edit_requested.connect(self._on_edit_variable)
+        self.env_table.delete_requested.connect(self._on_delete_variables)
+        self.env_table.duplicate_requested.connect(self._on_duplicate_variable)
+        
+        # 获取内部表格组件的选择变化信号
+        if hasattr(self.env_table, 'table_widget'):
+            self.env_table.table_widget.selection_changed.connect(self._on_selection_changed)
         
         # 搜索事件
-        self.search_input.textChanged.connect(self._on_search_text_changed)
-        self.search_button.clicked.connect(self._on_search_clicked)
-        self.clear_search_button.clicked.connect(self._on_clear_search_clicked)
+        self.search_widget.search_changed.connect(self._on_search_changed)
+        self.search_widget.search_cleared.connect(self._on_search_cleared)
+        self.search_widget.textChanged.connect(self._on_search_text_changed)
         
         # 按钮点击事件
         self.new_button.clicked.connect(self._on_new_clicked)
@@ -437,6 +408,9 @@ class MainWindow(QMainWindow):
         self.delete_button.clicked.connect(self._on_delete_clicked)
         self.duplicate_button.clicked.connect(self._on_duplicate_clicked)
         self.refresh_button.clicked.connect(self._on_refresh_clicked)
+        
+        # 环境变量控制器变更通知
+        self.env_controller.add_change_callback(self._on_env_changed)
     
     def _restore_window_state(self):
         """恢复窗口状态"""
@@ -498,10 +472,9 @@ class MainWindow(QMainWindow):
         )
     
     # 事件处理方法
-    def _on_selection_changed(self):
+    def _on_selection_changed(self, selected_vars: list):
         """处理表格选择变化"""
-        selected_items = self.env_table.selectedItems()
-        has_selection = len(selected_items) > 0
+        has_selection = len(selected_vars) > 0
         
         # 更新按钮状态
         self.edit_button.setEnabled(has_selection)
@@ -513,68 +486,319 @@ class MainWindow(QMainWindow):
             self.toolbar_actions['edit'].setEnabled(has_selection)
             self.toolbar_actions['delete'].setEnabled(has_selection)
         
-        # TODO: 更新详细信息显示
+        # 更新详细信息显示
         if has_selection:
-            # 获取选中行的信息
-            row = self.env_table.currentRow()
-            if row >= 0:
-                name_item = self.env_table.item(row, 0)
-                value_item = self.env_table.item(row, 1)
-                type_item = self.env_table.item(row, 2)
-                
-                name = name_item.text() if name_item else ""
-                value = value_item.text() if value_item else ""
-                env_type = type_item.text() if type_item else ""
-                
-                info_text = f"<b>变量名:</b> {name}<br>"
-                info_text += f"<b>类型:</b> {env_type}<br>"
-                info_text += f"<b>变量值:</b><br>{value}"
-                
-                self.info_label.setText(info_text)
+            var = selected_vars[0]  # 显示第一个选中变量的信息
+            
+            info_text = f"<b>变量名:</b> {var.name}<br>"
+            info_text += f"<b>类型:</b> {'系统变量' if var.env_type == EnvType.SYSTEM else '用户变量'}<br>"
+            info_text += f"<b>变量值:</b><br>{var.display_value if hasattr(var, 'display_value') else var.value}"
+            
+            # 如果有多个选中项，显示选中数量
+            if len(selected_vars) > 1:
+                info_text += f"<br><br><i>已选中 {len(selected_vars)} 个变量</i>"
+            
+            self.info_label.setText(info_text)
         else:
             self.info_label.setText("选择一个环境变量查看详细信息")
     
-    def _on_search_text_changed(self):
+    def _on_search_text_changed(self, text: str):
         """处理搜索文本变化"""
-        # TODO: 实现实时搜索功能
-        pass
+        # 实时搜索：当搜索框为空时显示所有变量，否则等待用户停止输入后搜索
+        if not text.strip():
+            self._load_env_vars()
+            self._update_status("显示所有变量")
+        else:
+            # 搜索框有内容时，显示提示但不立即搜索（等待search_changed信号）
+            self._update_status("输入搜索条件...")
     
-    def _on_search_clicked(self):
-        """处理搜索按钮点击"""
-        # TODO: 实现搜索功能
-        search_text = self.search_input.text()
-        self._update_status(f"搜索: {search_text}" if search_text else "显示所有变量")
-    
-    def _on_clear_search_clicked(self):
-        """处理清除搜索按钮点击"""
-        self.search_input.clear()
-        self._update_status("显示所有变量")
+
     
     def _on_new_clicked(self):
         """处理新建按钮点击"""
-        # TODO: 打开新建变量对话框
-        self._update_status("新建环境变量...")
+        try:
+            dialog = EditDialog(self)
+            dialog.variable_saved.connect(self._on_variable_saved)
+            
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.logger.info("新建变量对话框关闭")
+            
+        except Exception as e:
+            error_msg = f"打开新建对话框失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
     def _on_edit_clicked(self):
         """处理编辑按钮点击"""
-        # TODO: 打开编辑变量对话框
-        self._update_status("编辑环境变量...")
+        try:
+            selected_vars = self.env_table.get_selected_env_vars()
+            if not selected_vars:
+                QMessageBox.information(self, "提示", "请先选择要编辑的环境变量")
+                return
+            
+            var = selected_vars[0]  # 编辑第一个选中的变量
+            self._on_edit_variable(var)
+            
+        except Exception as e:
+            error_msg = f"编辑变量失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
     def _on_delete_clicked(self):
         """处理删除按钮点击"""
-        # TODO: 确认并删除选中的环境变量
-        self._update_status("删除环境变量...")
+        try:
+            selected_vars = self.env_table.get_selected_env_vars()
+            if not selected_vars:
+                QMessageBox.information(self, "提示", "请先选择要删除的环境变量")
+                return
+            
+            self._on_delete_variables(selected_vars)
+            
+        except Exception as e:
+            error_msg = f"删除变量失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
     def _on_duplicate_clicked(self):
         """处理复制按钮点击"""
-        # TODO: 复制选中的环境变量
-        self._update_status("复制环境变量...")
+        try:
+            selected_vars = self.env_table.get_selected_env_vars()
+            if not selected_vars:
+                QMessageBox.information(self, "提示", "请先选择要复制的环境变量")
+                return
+            
+            var = selected_vars[0]  # 复制第一个选中的变量
+            self._on_duplicate_variable(var)
+            
+        except Exception as e:
+            error_msg = f"复制变量失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
     def _on_refresh_clicked(self):
         """处理刷新按钮点击"""
-        # TODO: 刷新环境变量列表
-        self._update_status("刷新环境变量列表...")
+        try:
+            # 清除控制器缓存
+            self.env_controller.refresh_cache()
+            
+            # 重新加载数据
+            self._load_env_vars()
+            
+            self._update_status("环境变量列表已刷新")
+            
+        except Exception as e:
+            error_msg = f"刷新失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
+    def _on_env_changed(self, action: str, variable: EnvironmentVariable, old_value: str = None):
+        """处理环境变量变更通知"""
+        self.logger.info(f"环境变量变更: {action} - {variable.name}")
+        
+        # 刷新表格数据
+        self._load_env_vars()
+        
+        # 发射变更信号
+        self.env_changed.emit()
+
+    def _on_search_changed(self, search_text: str, options: dict):
+        """处理搜索变化"""
+        try:
+            if not search_text.strip():
+                # 空搜索，显示所有变量
+                self._load_env_vars()
+                return
+            
+            # 执行搜索
+            all_vars = self.env_controller.get_all_variables()
+            filtered_vars = []
+            
+            for var in all_vars:
+                if self._matches_search(var, search_text, options):
+                    filtered_vars.append(var)
+            
+            # 更新表格显示
+            self.env_table.set_env_vars(filtered_vars)
+            self._update_env_count(len(filtered_vars))
+            self._update_status(f"搜索结果: {len(filtered_vars)} 个变量")
+            
+        except Exception as e:
+            self.logger.error(f"搜索失败: {e}")
+            self._update_status(f"搜索失败: {str(e)}")
+
+    def _matches_search(self, var: EnvironmentVariable, search_text: str, options: dict) -> bool:
+        """检查变量是否匹配搜索条件"""
+        search_text = search_text.lower()
+        search_type = options.get('search_type', '全部')
+        case_sensitive = options.get('case_sensitive', False)
+        
+        if not case_sensitive:
+            name = var.name.lower()
+            value = var.value.lower()
+        else:
+            name = var.name
+            value = var.value
+            search_text = search_text if case_sensitive else search_text.lower()
+        
+        if search_type == '变量名':
+            return search_text in name
+        elif search_type == '变量值':
+            return search_text in value
+        else:  # 全部
+            return search_text in name or search_text in value
+
+    def _on_search_cleared(self):
+        """处理搜索清除"""
+        self._load_env_vars()
+        self._update_status("显示所有变量")
+
+    def _on_variable_saved(self, variable: EnvironmentVariable):
+        """处理变量保存成功"""
+        try:
+            # 根据变量状态执行相应操作
+            if variable.is_new:
+                success = self.env_controller.create_variable(
+                    variable.name, 
+                    variable.value, 
+                    variable.env_type
+                )
+                action = "创建"
+            else:
+                success = self.env_controller.update_variable(variable)
+                action = "更新"
+            
+            if success:
+                self._update_status(f"{action}环境变量成功: {variable.name}")
+                self.logger.info(f"{action}环境变量成功: {variable.name}")
+            else:
+                error_msg = f"{action}环境变量失败: {variable.name}"
+                self._update_status(error_msg)
+                QMessageBox.warning(self, "警告", error_msg)
+                
+        except Exception as e:
+            error_msg = f"保存变量失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
+
+    def _on_edit_variable(self, variable: EnvironmentVariable):
+        """处理编辑变量请求"""
+        try:
+            dialog = EditDialog(self, variable)
+            dialog.variable_saved.connect(self._on_variable_saved)
+            
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.logger.info(f"编辑变量对话框关闭: {variable.name}")
+            
+        except Exception as e:
+            error_msg = f"打开编辑对话框失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
+
+    def _on_delete_variables(self, variables: list):
+        """处理删除变量请求"""
+        try:
+            if not variables:
+                return
+            
+            # 确认删除
+            var_names = [var.name for var in variables]
+            if len(variables) == 1:
+                message = f"确定要删除环境变量 '{var_names[0]}' 吗？"
+            else:
+                message = f"确定要删除 {len(variables)} 个环境变量吗？\n\n{', '.join(var_names[:5])}"
+                if len(var_names) > 5:
+                    message += f"\n等共 {len(var_names)} 个变量"
+            
+            reply = QMessageBox.question(
+                self,
+                "确认删除",
+                message,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            
+            if reply == QMessageBox.StandardButton.Yes:
+                # 执行删除操作
+                deleted_count = 0
+                failed_vars = []
+                
+                for var in variables:
+                    try:
+                        if self.env_controller.delete_variable(var):
+                            deleted_count += 1
+                        else:
+                            failed_vars.append(var.name)
+                    except Exception as e:
+                        self.logger.error(f"删除变量 {var.name} 失败: {e}")
+                        failed_vars.append(var.name)
+                
+                # 显示结果
+                if deleted_count > 0:
+                    self._update_status(f"已删除 {deleted_count} 个环境变量")
+                
+                if failed_vars:
+                    QMessageBox.warning(
+                        self,
+                        "部分删除失败",
+                        f"以下变量删除失败:\n{', '.join(failed_vars)}"
+                    )
+            
+        except Exception as e:
+            error_msg = f"删除操作失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
+
+    def _on_duplicate_variable(self, variable: EnvironmentVariable):
+        """处理复制变量请求"""
+        try:
+            # 创建副本变量
+            new_var = EnvironmentVariable(
+                name=f"{variable.name}_Copy",
+                value=variable.value,
+                env_type=variable.env_type,
+                is_new=True
+            )
+            
+            # 打开编辑对话框让用户修改
+            dialog = EditDialog(self, new_var)
+            dialog.variable_saved.connect(self._on_variable_saved)
+            
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.logger.info(f"复制变量对话框关闭: {variable.name}")
+            
+        except Exception as e:
+            error_msg = f"复制变量失败: {str(e)}"
+            self.logger.error(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
+
+    def _load_env_vars(self):
+        """加载环境变量数据"""
+        try:
+            self._update_status("正在加载环境变量...")
+            
+            # 从控制器获取所有环境变量
+            env_vars = self.env_controller.get_all_variables()
+            
+            # 设置到表格组件
+            self.env_table.set_env_vars(env_vars)
+            
+            # 更新统计信息
+            self._update_env_count(len(env_vars))
+            
+            self._update_status(f"已加载 {len(env_vars)} 个环境变量")
+            self.logger.info(f"成功加载 {len(env_vars)} 个环境变量")
+            
+        except Exception as e:
+            error_msg = f"加载环境变量失败: {str(e)}"
+            self._update_status(error_msg)
+            self.logger.error(error_msg)
+            
+            QMessageBox.critical(
+                self,
+                "错误",
+                f"无法加载环境变量数据：\n{str(e)}"
+            )
+
     # 窗口事件处理
     def closeEvent(self, event):
         """处理窗口关闭事件"""
