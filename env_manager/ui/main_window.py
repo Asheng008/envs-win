@@ -34,6 +34,10 @@ class MainWindow(QMainWindow):
     # 自定义信号
     env_changed = Signal()  # 环境变量变更信号
     
+    # =====================================================================
+    # 初始化相关方法
+    # =====================================================================
+    
     def __init__(self):
         super().__init__()
         
@@ -85,6 +89,29 @@ class MainWindow(QMainWindow):
         
         # 设置焦点
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    
+    def _restore_window_state(self):
+        """恢复窗口状态"""
+        window_config = self.config_manager.get_window_config()
+        
+        # 设置窗口大小，确保转换为整数类型
+        width = int(window_config['width'])
+        height = int(window_config['height'])
+        self.resize(width, height)
+        
+        # 恢复窗口位置
+        if window_config['position']:
+            pos = window_config['position']
+            if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+                self.move(QPoint(int(pos[0]), int(pos[1])))
+        
+        # 恢复最大化状态
+        if window_config['maximized']:
+            self.showMaximized()
+    
+    # =====================================================================
+    # UI组件创建方法
+    # =====================================================================
     
     def _create_content_area(self) -> QSplitter:
         """创建主要内容区域"""
@@ -377,6 +404,10 @@ class MainWindow(QMainWindow):
         self.timer.start(1000)  # 每秒更新一次
         self._update_time()
     
+    # =====================================================================
+    # 事件处理设置方法
+    # =====================================================================
+    
     def _setup_shortcuts(self):
         """设置快捷键"""
         # 连接快捷键到相应动作
@@ -412,24 +443,9 @@ class MainWindow(QMainWindow):
         # 环境变量控制器变更通知
         self.env_controller.add_change_callback(self._on_env_changed)
     
-    def _restore_window_state(self):
-        """恢复窗口状态"""
-        window_config = self.config_manager.get_window_config()
-        
-        # 设置窗口大小，确保转换为整数类型
-        width = int(window_config['width'])
-        height = int(window_config['height'])
-        self.resize(width, height)
-        
-        # 恢复窗口位置
-        if window_config['position']:
-            pos = window_config['position']
-            if isinstance(pos, (list, tuple)) and len(pos) >= 2:
-                self.move(QPoint(int(pos[0]), int(pos[1])))
-        
-        # 恢复最大化状态
-        if window_config['maximized']:
-            self.showMaximized()
+    # =====================================================================
+    # 状态管理方法
+    # =====================================================================
     
     def _save_window_state(self):
         """保存窗口状态"""
@@ -460,6 +476,10 @@ class MainWindow(QMainWindow):
         """更新环境变量计数"""
         self.env_count_label.setText(f"环境变量: {count}")
     
+    # =====================================================================
+    # 对话框和显示方法
+    # =====================================================================
+    
     def _show_about_dialog(self):
         """显示关于对话框"""
         QMessageBox.about(
@@ -471,7 +491,42 @@ class MainWindow(QMainWindow):
             f"<p>使用PySide6开发</p>"
         )
     
-    # 事件处理方法
+    # =====================================================================
+    # 数据加载方法
+    # =====================================================================
+    
+    def _load_env_vars(self):
+        """加载环境变量数据"""
+        try:
+            self._update_status("正在加载环境变量...")
+            
+            # 从控制器获取所有环境变量
+            env_vars = self.env_controller.get_all_variables()
+            
+            # 设置到表格组件
+            self.env_table.set_env_vars(env_vars)
+            
+            # 更新统计信息
+            self._update_env_count(len(env_vars))
+            
+            self._update_status(f"已加载 {len(env_vars)} 个环境变量")
+            self.logger.info(f"成功加载 {len(env_vars)} 个环境变量")
+            
+        except Exception as e:
+            error_msg = f"加载环境变量失败: {str(e)}"
+            self._update_status(error_msg)
+            self.logger.error(error_msg)
+            
+            QMessageBox.critical(
+                self,
+                "错误",
+                f"无法加载环境变量数据：\n{str(e)}"
+            )
+    
+    # =====================================================================
+    # 选择和搜索事件处理方法
+    # =====================================================================
+    
     def _on_selection_changed(self, selected_vars: list):
         """处理表格选择变化"""
         has_selection = len(selected_vars) > 0
@@ -512,7 +567,60 @@ class MainWindow(QMainWindow):
             # 搜索框有内容时，显示提示但不立即搜索（等待search_changed信号）
             self._update_status("输入搜索条件...")
     
-
+    def _on_search_changed(self, search_text: str, options: dict):
+        """处理搜索变化"""
+        try:
+            if not search_text.strip():
+                # 空搜索，显示所有变量
+                self._load_env_vars()
+                return
+            
+            # 执行搜索
+            all_vars = self.env_controller.get_all_variables()
+            filtered_vars = []
+            
+            for var in all_vars:
+                if self._matches_search(var, search_text, options):
+                    filtered_vars.append(var)
+            
+            # 更新表格显示
+            self.env_table.set_env_vars(filtered_vars)
+            self._update_env_count(len(filtered_vars))
+            self._update_status(f"搜索结果: {len(filtered_vars)} 个变量")
+            
+        except Exception as e:
+            self.logger.error(f"搜索失败: {e}")
+            self._update_status(f"搜索失败: {str(e)}")
+    
+    def _on_search_cleared(self):
+        """处理搜索清除"""
+        self._load_env_vars()
+        self._update_status("显示所有变量")
+    
+    def _matches_search(self, var: EnvironmentVariable, search_text: str, options: dict) -> bool:
+        """检查变量是否匹配搜索条件"""
+        search_text = search_text.lower()
+        search_type = options.get('search_type', '全部')
+        case_sensitive = options.get('case_sensitive', False)
+        
+        if not case_sensitive:
+            name = var.name.lower()
+            value = var.value.lower()
+        else:
+            name = var.name
+            value = var.value
+            search_text = search_text if case_sensitive else search_text.lower()
+        
+        if search_type == '变量名':
+            return search_text in name
+        elif search_type == '变量值':
+            return search_text in value
+        else:  # 全部
+            return search_text in name or search_text in value
+    
+    # =====================================================================
+    # 按钮点击事件处理方法
+    # =====================================================================
     
     def _on_new_clicked(self):
         """处理新建按钮点击"""
@@ -591,6 +699,10 @@ class MainWindow(QMainWindow):
             self.logger.error(error_msg)
             QMessageBox.critical(self, "错误", error_msg)
     
+    # =====================================================================
+    # 变量操作事件处理方法
+    # =====================================================================
+    
     def _on_env_changed(self, action: str, variable: EnvironmentVariable, old_value: str = None):
         """处理环境变量变更通知"""
         self.logger.info(f"环境变量变更: {action} - {variable.name}")
@@ -600,58 +712,7 @@ class MainWindow(QMainWindow):
         
         # 发射变更信号
         self.env_changed.emit()
-
-    def _on_search_changed(self, search_text: str, options: dict):
-        """处理搜索变化"""
-        try:
-            if not search_text.strip():
-                # 空搜索，显示所有变量
-                self._load_env_vars()
-                return
-            
-            # 执行搜索
-            all_vars = self.env_controller.get_all_variables()
-            filtered_vars = []
-            
-            for var in all_vars:
-                if self._matches_search(var, search_text, options):
-                    filtered_vars.append(var)
-            
-            # 更新表格显示
-            self.env_table.set_env_vars(filtered_vars)
-            self._update_env_count(len(filtered_vars))
-            self._update_status(f"搜索结果: {len(filtered_vars)} 个变量")
-            
-        except Exception as e:
-            self.logger.error(f"搜索失败: {e}")
-            self._update_status(f"搜索失败: {str(e)}")
-
-    def _matches_search(self, var: EnvironmentVariable, search_text: str, options: dict) -> bool:
-        """检查变量是否匹配搜索条件"""
-        search_text = search_text.lower()
-        search_type = options.get('search_type', '全部')
-        case_sensitive = options.get('case_sensitive', False)
-        
-        if not case_sensitive:
-            name = var.name.lower()
-            value = var.value.lower()
-        else:
-            name = var.name
-            value = var.value
-            search_text = search_text if case_sensitive else search_text.lower()
-        
-        if search_type == '变量名':
-            return search_text in name
-        elif search_type == '变量值':
-            return search_text in value
-        else:  # 全部
-            return search_text in name or search_text in value
-
-    def _on_search_cleared(self):
-        """处理搜索清除"""
-        self._load_env_vars()
-        self._update_status("显示所有变量")
-
+    
     def _on_variable_saved(self, variable: EnvironmentVariable):
         """处理变量保存成功"""
         try:
@@ -679,7 +740,7 @@ class MainWindow(QMainWindow):
             error_msg = f"保存变量失败: {str(e)}"
             self.logger.error(error_msg)
             QMessageBox.critical(self, "错误", error_msg)
-
+    
     def _on_edit_variable(self, variable: EnvironmentVariable):
         """处理编辑变量请求"""
         try:
@@ -693,7 +754,7 @@ class MainWindow(QMainWindow):
             error_msg = f"打开编辑对话框失败: {str(e)}"
             self.logger.error(error_msg)
             QMessageBox.critical(self, "错误", error_msg)
-
+    
     def _on_delete_variables(self, variables: list):
         """处理删除变量请求"""
         try:
@@ -747,7 +808,7 @@ class MainWindow(QMainWindow):
             error_msg = f"删除操作失败: {str(e)}"
             self.logger.error(error_msg)
             QMessageBox.critical(self, "错误", error_msg)
-
+    
     def _on_duplicate_variable(self, variable: EnvironmentVariable):
         """处理复制变量请求"""
         try:
@@ -770,36 +831,11 @@ class MainWindow(QMainWindow):
             error_msg = f"复制变量失败: {str(e)}"
             self.logger.error(error_msg)
             QMessageBox.critical(self, "错误", error_msg)
-
-    def _load_env_vars(self):
-        """加载环境变量数据"""
-        try:
-            self._update_status("正在加载环境变量...")
-            
-            # 从控制器获取所有环境变量
-            env_vars = self.env_controller.get_all_variables()
-            
-            # 设置到表格组件
-            self.env_table.set_env_vars(env_vars)
-            
-            # 更新统计信息
-            self._update_env_count(len(env_vars))
-            
-            self._update_status(f"已加载 {len(env_vars)} 个环境变量")
-            self.logger.info(f"成功加载 {len(env_vars)} 个环境变量")
-            
-        except Exception as e:
-            error_msg = f"加载环境变量失败: {str(e)}"
-            self._update_status(error_msg)
-            self.logger.error(error_msg)
-            
-            QMessageBox.critical(
-                self,
-                "错误",
-                f"无法加载环境变量数据：\n{str(e)}"
-            )
-
-    # 窗口事件处理
+    
+    # =====================================================================
+    # 窗口事件处理方法
+    # =====================================================================
+    
     def closeEvent(self, event):
         """处理窗口关闭事件"""
         # 保存窗口状态
