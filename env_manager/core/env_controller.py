@@ -153,7 +153,7 @@ class EnvController:
             # 验证变量
             valid, error = self.validate_variable(var)
             if not valid:
-                raise ValidationError(error)
+                raise ValidationError(error or "环境变量验证失败")
             
             # 检查是否已存在
             if self.variable_exists(name, env_type):
@@ -199,7 +199,7 @@ class EnvController:
             # 验证变量
             valid, error = self.validate_variable(var)
             if not valid:
-                raise ValidationError(error)
+                raise ValidationError(error or "环境变量验证失败")
             
             # 获取原始值
             old_value = self.get_variable_value(var.name, var.env_type)
@@ -292,7 +292,7 @@ class EnvController:
             logger.error(f"验证环境变量失败: {e}")
             return False, f"验证失败: {e}"
     
-    def validate_variable_change(self, var: EnvironmentVariable, is_system: bool = None) -> Tuple[bool, Optional[str], List[str]]:
+    def validate_variable_change(self, var: EnvironmentVariable, is_system: Optional[bool] = None) -> Tuple[bool, Optional[str], List[str]]:
         """验证环境变量更改（包含警告信息）"""
         try:
             if is_system is None:
